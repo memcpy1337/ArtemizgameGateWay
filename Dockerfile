@@ -11,8 +11,10 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["GateWay.API.csproj", "GateWay.API/"]
 RUN dotnet restore "GateWay.API/GateWay.API.csproj"
-COPY . .
+
 WORKDIR "/src/GateWay.API"
+COPY . .
+
 RUN dotnet build "GateWay.API.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
