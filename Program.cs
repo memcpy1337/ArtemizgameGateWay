@@ -14,6 +14,9 @@ var identityServerSettings = new IdentityServerSettings();
 builder.Configuration.GetSection("IdentityServerSettings").Bind(identityServerSettings);
 builder.Services.AddSingleton(Options.Create(identityServerSettings));
 
+#if !DEBUG
+builder.Services.AddLettuceEncrypt();
+#endif
 
 #if !DEBUG
      identityServerSettings.AccessTokenSecret = Environment.GetEnvironmentVariable("JWT_ACCESS_TOKEN_SECRET");
