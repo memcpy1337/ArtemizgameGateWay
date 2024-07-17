@@ -6,6 +6,8 @@ WORKDIR /app
 EXPOSE 80
 EXPOSE 443
 
+RUN chmod -R 755 /root/.aspnet/https/
+
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
@@ -20,8 +22,6 @@ RUN dotnet build "GateWay.API.csproj" -c $BUILD_CONFIGURATION -o /app/build
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
 RUN dotnet publish "GateWay.API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
-
-RUN chown 777 /root/.aspnet/https/
 
 FROM base AS final
 WORKDIR /app
