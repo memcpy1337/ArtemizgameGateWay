@@ -52,7 +52,9 @@ if (app.Environment.IsDevelopment())
 
 app.UseAuthentication();
 app.UseAuthorization();
-
+#if !DEBUG
+app.UseHttpsRedirection();
+#endif
 app.MapReverseProxy();
 
 app.Run(); 
