@@ -6,8 +6,6 @@ WORKDIR /app
 EXPOSE 80
 EXPOSE 443
 
-RUN chmod -R 755 /root/.aspnet/https/
-
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
