@@ -35,6 +35,7 @@ builder.Services.AddFluffySpoonLetsEncrypt(new LetsEncryptOptions()
 });
 
 builder.Services.AddFluffySpoonLetsEncryptFileCertificatePersistence();
+builder.Services.AddFluffySpoonLetsEncryptMemoryChallengePersistence();
 
 #if !DEBUG
      identityServerSettings.AccessTokenSecret = Environment.GetEnvironmentVariable("JWT_ACCESS_TOKEN_SECRET");
