@@ -53,9 +53,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseAuthentication();
 app.UseAuthorization();
-#if !DEBUG
-app.UseHttpsRedirection();
-#endif
+
 app.MapReverseProxy(proxyPipeline =>
 {
     // Use a custom proxy middleware, defined below
