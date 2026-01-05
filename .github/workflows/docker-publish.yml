@@ -143,6 +143,9 @@ jobs:
           print("Updated digest in", file, "to", digest)
           PY
         shell: bash
+        env:
+          FILE: infra/${{ secrets.INFRA_VALUES_FILE }}
+          DIGEST: ${{ steps.build-and-push.outputs.digest }}
 
       - name: Commit & push infra change
         if: github.event_name != 'pull_request'
