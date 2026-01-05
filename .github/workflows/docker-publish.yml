@@ -113,7 +113,7 @@ jobs:
           DIGEST: ${{ steps.build-and-push.outputs.digest }}
         run: |
           set -euo pipefail
-          FILE="infra/${VALUES_FILE}"
+          FILE="${VALUES_FILE}"
 
           if [ ! -f "$FILE" ]; then
             echo "Values file not found: $FILE"
