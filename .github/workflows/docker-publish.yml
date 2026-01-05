@@ -109,7 +109,7 @@ jobs:
       - name: Bump image digest in infra values
         if: github.event_name != 'pull_request'
         env:
-          VALUES_FILE: infra/${{ secrets.INFRA_VALUES_FILE }}
+          VALUES_FILE: ${{ secrets.INFRA_VALUES_FILE }}
           DIGEST: ${{ steps.build-and-push.outputs.digest }}
         run: |
           set -euo pipefail
