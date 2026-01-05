@@ -110,28 +110,36 @@ jobs:
         if: github.event_name != 'pull_request'
         env:
           VALUES_FILE: ${{ secrets.INFRA_VALUES_FILE }}
+          FILE: infra/${{ secrets.INFRA_VALUES_FILE }}
           DIGEST: ${{ steps.build-and-push.outputs.digest }}
         run: |
           set -euo pipefail
-          FILE="infra/${VALUES_FILE}"
+
+          echo "Updating values file: $FILE"
+
+          if [ -z "${VALUES_FILE}" ]; then
+            echo "Secret INFRA_VALUES_FILE is empty. Example: infra/envs/test/values/yarp.yaml"
+            exit 1
+          fi
 
           if [ ! -f "$FILE" ]; then
             echo "Values file not found: $FILE"
-            echo "Check secret INFRA_VALUES_FILE (example: infra/envs/test/values/yarp.yaml)"
+            echo "Listing candidates:"
+            find infra/infra -type f -iname "*yarp*.y*ml" -maxdepth 8 || true
             exit 1
           fi
 
           python - << 'PY'
           import os, re
+
           file = os.environ["FILE"]
           digest = os.environ["DIGEST"]
 
           with open(file, "r", encoding="utf-8") as f:
               s = f.read()
 
-          # поддержим digest как в кавычках, так и без
           if re.search(r'^\s*digest:\s*', s, flags=re.M) is None:
-              raise SystemExit("digest: key not found in values file. Add image.digest: \"sha256:...\"")
+              raise SystemExit("digest: key not found in values file (expected image.digest)")
 
           s2 = re.sub(r'(^\s*digest:\s*")[^"]*(")', r'\1'+digest+r'\2', s, flags=re.M)
           if s2 == s:
@@ -143,9 +151,7 @@ jobs:
           print("Updated digest in", file, "to", digest)
           PY
         shell: bash
-        env:
-          FILE: infra/${{ secrets.INFRA_VALUES_FILE }}
-          DIGEST: ${{ steps.build-and-push.outputs.digest }}
+
 
       - name: Commit & push infra change
         if: github.event_name != 'pull_request'
