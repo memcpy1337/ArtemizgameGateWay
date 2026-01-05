@@ -106,17 +106,6 @@ jobs:
           token: ${{ secrets.INFRA_REPO_TOKEN }}
           path: infra
 
-      - name: list infra repo files
-        run: |
-          echo "=== pwd ==="
-          pwd
-          echo "=== ls -la ==="
-          ls -la
-          echo "=== infra/ tree ==="
-          ls -la infra || true
-          echo "=== recursive infra/ ==="
-          find infra -maxdepth 5 -type f || true
-
       - name: Bump image digest in infra values
         if: github.event_name != 'pull_request'
         env:
