@@ -20,6 +20,7 @@ env:
   REGISTRY: ghcr.io
   # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
+  INFRA_REPO: memcpy1337/ArtemizgameInfra
 
 
 jobs:
@@ -97,6 +98,60 @@ jobs:
         # against the sigstore community Fulcio instance.
         run: echo "${TAGS}" | xargs -I {} cosign sign --yes {}@${DIGEST}
 
-      - name: Call webhook
+      - name: Checkout infra repo
+        if: github.event_name != 'pull_request'
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.INFRA_REPO }}
+          token: ${{ secrets.INFRA_REPO_TOKEN }}
+          path: infra
+
+      - name: Bump image digest in infra values
+        if: github.event_name != 'pull_request'
+        env:
+          VALUES_FILE: infra/${{ secrets.INFRA_VALUES_FILE }}
+          DIGEST: ${{ steps.build-and-push.outputs.digest }}
         run: |
-          curl -X POST -H "Content-Type: application/json" -d '{}' ${{ secrets.WEBHOOK_URL }}
+          set -euo pipefail
+          FILE="infra/${VALUES_FILE}"
+
+          if [ ! -f "$FILE" ]; then
+            echo "Values file not found: $FILE"
+            echo "Check secret INFRA_VALUES_FILE (example: infra/envs/test/values/yarp.yaml)"
+            exit 1
+          fi
+
+          python - << 'PY'
+          import os, re
+          file = os.environ["FILE"]
+          digest = os.environ["DIGEST"]
+
+          with open(file, "r", encoding="utf-8") as f:
+              s = f.read()
+
+          # поддержим digest как в кавычках, так и без
+          if re.search(r'^\s*digest:\s*', s, flags=re.M) is None:
+              raise SystemExit("digest: key not found in values file. Add image.digest: \"sha256:...\"")
+
+          s2 = re.sub(r'(^\s*digest:\s*")[^"]*(")', r'\1'+digest+r'\2', s, flags=re.M)
+          if s2 == s:
+              s2 = re.sub(r'(^\s*digest:\s*)\S+', r'\1'+digest, s, flags=re.M)
+
+          with open(file, "w", encoding="utf-8") as f:
+              f.write(s2)
+
+          print("Updated digest in", file, "to", digest)
+          PY
+        shell: bash
+
+      - name: Commit & push infra change
+        if: github.event_name != 'pull_request'
+        run: |
+          set -euo pipefail
+          cd infra
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add "${{ secrets.INFRA_VALUES_FILE }}"
+          git commit -m "deploy: bump digest to ${{ steps.build-and-push.outputs.digest }}" || exit 0
+          git push
