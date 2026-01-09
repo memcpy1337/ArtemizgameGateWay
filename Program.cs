@@ -1,9 +1,13 @@
 using GateWay.API.Settings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using System.Net;
 using System.Text;
+using Microsoft.AspNetCore.HttpOverrides;
+using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,6 +46,14 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddReverseProxy().LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
 
+builder.Services.Configure<ForwardedHeadersOptions>(o =>
+{
+    o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+
+    o.KnownNetworks.Add(new Microsoft.AspNetCore.HttpOverrides.IPNetwork(IPAddress.Parse("10.42.0.0"), 16));
+    o.KnownNetworks.Add(new Microsoft.AspNetCore.HttpOverrides.IPNetwork(IPAddress.Parse("10.43.0.0"), 16));
+});
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -50,7 +62,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-
+app.UseForwardedHeaders();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -67,9 +79,12 @@ app.MapReverseProxy(proxyPipeline =>
 
 Task DebugStep(HttpContext context, Func<Task> next)
 {
-    Console.WriteLine(context.Request.Headers["X-Forwarded-For"].ToString());
+    var remoteIp = context.Connection.RemoteIpAddress?.ToString();
+    var xff = context.Request.Headers["X-Forwarded-For"].ToString();
+    var xReal = context.Request.Headers["X-Real-Ip"].ToString();
 
-    // Important - required to move to the next step in the proxy pipeline
+    Console.WriteLine($"[YARP] RemoteIp={remoteIp}; XFF={xff}; X-Real-Ip={xReal}");
+
     return next();
 }
 
